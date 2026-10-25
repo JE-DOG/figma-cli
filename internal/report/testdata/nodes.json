@@ -1,0 +1,47 @@
+{
+  "name": "Example checkout (handwritten fixture)",
+  "nodes": {
+    "10:1": {
+      "document": {
+        "id": "10:1", "name": "Checkout", "type": "FRAME",
+        "layoutMode": "VERTICAL", "layoutSizingHorizontal": "FIXED",
+        "layoutSizingVertical": "HUG", "paddingTop": 0, "paddingRight": 16,
+        "paddingBottom": 24, "paddingLeft": 16, "itemSpacing": 12,
+        "minWidth": 0, "maxWidth": null,
+        "absoluteBoundingBox": {"x": 80.5, "y": -32, "width": 360, "height": 112},
+        "absoluteRenderBounds": null,
+        "size": {"x": 360, "y": 112},
+        "relativeTransform": [[1,0,80.5],[0,1,-32]],
+        "children": [
+          {
+            "id": "10:2", "name": "Renamed purchase button", "type": "INSTANCE",
+            "componentId": "20:1", "layoutSizingHorizontal": "FILL",
+            "children": [
+              {
+                "id": "10:3", "name": "Price", "type": "TEXT", "characters": "Pay 😀 now",
+                "style": {
+                  "fontFamily": "Inter", "fontPostScriptName": "Inter-Regular",
+                  "fontWeight": 400, "italic": false, "fontSize": 16,
+                  "letterSpacing": 0, "lineHeightPx": 24, "lineHeightUnit": "PIXELS",
+                  "paragraphSpacing": 0
+                },
+                "characterStyleOverrides": [0,0,0,0,1,1],
+                "styleOverrideTable": {"1": {"fontWeight": 700, "fontPostScriptName": "Inter-Bold"}}
+              }
+            ]
+          },
+          {
+            "id": "10:4", "name": "Empty label", "type": "TEXT", "characters": "",
+            "style": {"fontFamily":"Inter", "fontSize":12, "letterSpacing":0, "lineHeightUnit":"INTRINSIC_%", "lineHeightPercent":100}
+          },
+          {
+            "id": "10:5", "name": "Unknown source", "type": "INSTANCE", "componentId": "99:1"
+          }
+        ]
+      },
+      "components": {"20:1": {"name":"Size=Large, State=Default", "key":"example-component-key", "remote":true, "componentSetId":"20:0"}},
+      "componentSets": {"20:0": {"name":"Buttons / Purchase", "key":"example-set-key", "remote":true}}
+    },
+    "10:6": null
+  }
+}
