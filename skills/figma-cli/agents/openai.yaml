@@ -1,0 +1,3 @@
+interface:
+  display_name: "Figma CLI"
+  short_description: "Inspect Figma nodes and export PNG/SVG with figma-cli"

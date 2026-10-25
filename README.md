@@ -1,11 +1,91 @@
-# Figma REST CLI
+# Figma CLI
+
+Это **vibecoded CLI**, разработанный с помощью AI-агента.
 
 Небольшой **read-only** CLI на Go: читает файл или поддерево Figma, показывает
 исходные компоненты экземпляров, типографику, layout/геометрию и экспортирует PNG/SVG.
 Работает через REST API без запущенного Figma Desktop, плагина и браузера.
 
-Репозиторий называется `figma-cli`, бинарник — **`figma-rest`**: он не заменяет
-существующий `silships/figma-cli` и не меняет его skill или настройки.
+Репозиторий, бинарник и skill называются **`figma-cli`**.
+
+## Локальная установка и синхронизация
+
+Bash-скрипт [`sync-local.sh`](tools/scripts/setup/sync-local.sh) пересобирает CLI
+из текущего checkout, обновляет `~/.local/bin/figma-cli` и регистрирует skill
+ссылкой в `~/.agents/skills/figma-cli`:
+
+```sh
+bash ~/projects/figma-cli/tools/scripts/setup/sync-local.sh
+```
+
+Запускайте его повторно после обновления исходников. Он работает из любого
+рабочего каталога; нужен Go 1.26+, токен Figma не требуется. Скрипт не загружает
+изменения из git: сначала обновите checkout удобным вам способом. В `~/.local/bin`
+бинарник заменяется атомарно только после успешной сборки и проверки версии.
+При ошибке сборки старая установка сохраняется. `bin/figma-cli` внутри checkout
+этот скрипт не обновляет.
+
+Если `~/.local/bin` ещё не входит в PATH, добавьте в настройки своей оболочки:
+
+```sh
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+Для других каталогов или установки только бинарника:
+
+```sh
+bash tools/scripts/setup/sync-local.sh --bin-dir "$HOME/bin" --skills-dir "$HOME/.agents/skills"
+bash tools/scripts/setup/sync-local.sh --no-skill
+bash tools/scripts/setup/sync-local.sh --help
+```
+
+Существующая ссылка skill на этот checkout подходит для повторного запуска.
+Чужой каталог, ссылка на другой checkout или сломанная ссылка вызывают ошибку
+до сборки и замены бинарника; скрипт не удаляет их. Выберите другой
+`--skills-dir` или используйте `--no-skill`. Настройки shell, токены и другие CLI
+не меняются; `sudo` не требуется. Поддерживается Bash 3.2+.
+
+Проверка сценариев установки в изолированных временных каталогах:
+
+```sh
+bash tools/scripts/setup/test-sync-local.sh
+```
+
+## Skill для Codex
+
+Англоязычный skill [`figma-cli`](skills/figma-cli/SKILL.md) объясняет агенту,
+как выбирать узлы, читать исходные компоненты и mixed typography, интерпретировать
+layout и экспортировать PNG/SVG. Инструкции хранятся в этом репозитории;
+`agents/openai.yaml` задаёт название для списка skills. README остаётся на русском.
+
+Скрипт выше регистрирует skill вместе с CLI. Если нужна только регистрация
+без сборки, создайте ссылку в пользовательском каталоге `~/.agents/skills`:
+
+```sh
+mkdir -p "$HOME/.agents/skills"
+ln -s "$HOME/projects/figma-cli/skills/figma-cli" "$HOME/.agents/skills/figma-cli"
+```
+
+Если checkout находится в другом месте, замените путь к нему. Команда `ln -s`
+не заменяет существующую регистрацию; перед повторной установкой проверьте её.
+Ссылка использует актуальные инструкции из репозитория без копирования файлов.
+Не перемещайте checkout без обновления ссылки. При запуске команд из другого
+проекта skill определяет расположение `figma-cli` (включая установку через PATH)
+и использует абсолютный путь к бинарнику.
+
+Пример запроса в Codex:
+
+```text
+$figma-cli посмотри исходные компоненты, шрифты и отступы по ссылке FIGMA_URL
+```
+
+Skill также может выбираться автоматически по задаче. Если он не появился в
+списке, перезапустите Codex. Токен передаётся самому CLI через `FIGMA_TOKEN` в
+окружении процесса или `--token-stdin`; в skill и историю чата его добавлять не нужно.
+Экспорт через skill выполняется, когда его запросили в задаче.
+
+Расположение пользовательских skills и поддержка symlink описаны в
+[официальной документации OpenAI](https://learn.chatgpt.com/docs/build-skills).
 
 ## Почему Go
 
@@ -27,13 +107,14 @@
 cd ~/projects/figma-cli
 go test -race ./...
 go vet ./...
-go build -o bin/figma-rest ./cmd/figma-rest
-./bin/figma-rest help
+go build -o bin/figma-cli ./cmd/figma-cli
+./bin/figma-cli help
 ```
 
 `httptest`-тесты используют локальные HTTP/TLS-серверы и вымышленные данные;
 необходим доступ к loopback. Они не обращаются к Figma и не требуют токена.
-Сборка кладёт бинарник в игнорируемый `bin/`; глобальная установка не выполняется.
+Эта команда сборки кладёт бинарник в игнорируемый `bin/`. Для установки в
+пользовательский PATH используйте `tools/scripts/setup/sync-local.sh`, описанный выше.
 
 ## Доступ к Figma
 
@@ -47,14 +128,14 @@ tokens с областью **`file_content:read`** и доступом к нуж
 ```sh
 read -rs 'FIGMA_TOKEN?Figma token: '
 export FIGMA_TOKEN
-./bin/figma-rest inspect 'https://www.figma.com/design/FILE_KEY/Screen?node-id=12-34'
+./bin/figma-cli inspect 'https://www.figma.com/design/FILE_KEY/Screen?node-id=12-34'
 unset FIGMA_TOKEN
 ```
 
 Альтернатива — pipe из вашего secret manager:
 
 ```sh
-your-secret-manager-command | ./bin/figma-rest inspect --token-stdin --node 12:34 FILE_KEY
+your-secret-manager-command | ./bin/figma-cli inspect --token-stdin --node 12:34 FILE_KEY
 ```
 
 Здесь `your-secret-manager-command` — заменяемый пример, а не зависимость CLI.
@@ -72,37 +153,37 @@ OAuth-приложения, вход и обновление токенов в C
 
 ```sh
 # Разобрать ссылку офлайн, без токена
-./bin/figma-rest parse 'https://www.figma.com/design/FILE_KEY/Screen?node-id=12-34'
+./bin/figma-cli parse 'https://www.figma.com/design/FILE_KEY/Screen?node-id=12-34'
 
 # Нормализовать URL IDs, выбрать несколько узлов
-./bin/figma-rest parse --node 12-34 --node '56:78,90:12' FILE_KEY
+./bin/figma-cli parse --node 12-34 --node '56:78,90:12' FILE_KEY
 
 # Отчёт по выбранному поддереву
-./bin/figma-rest inspect --node 12:34 --depth 3 FILE_KEY
+./bin/figma-cli inspect --node 12:34 --depth 3 FILE_KEY
 
 # Файл целиком; --max-nodes ограничивает отчёт, но не ответ API
-./bin/figma-rest inspect --max-nodes 500 FILE_KEY
+./bin/figma-cli inspect --max-nodes 500 FILE_KEY
 
 # Локальный size, relativeTransform и векторные paths из API
-./bin/figma-rest inspect --geometry --node 12:34 FILE_KEY
+./bin/figma-cli inspect --geometry --node 12:34 FILE_KEY
 
 # Точный ответ API со всеми неизвестными полями и исходными числами
-./bin/figma-rest raw --node 12:34 FILE_KEY > response.json
+./bin/figma-cli raw --node 12:34 FILE_KEY > response.json
 
 # Получить конкретную версию
-./bin/figma-rest inspect --file-version VERSION_ID --node 12:34 FILE_KEY
+./bin/figma-cli inspect --file-version VERSION_ID --node 12:34 FILE_KEY
 
 # Скачать PNG 2x; создаст exports/12-34.png
-./bin/figma-rest export --node 12:34 --scale 2 FILE_KEY
+./bin/figma-cli export --node 12:34 --scale 2 FILE_KEY
 
 # SVG по умолчанию переводит текст в outlines
-./bin/figma-rest export --node 12:34 --format svg --output assets FILE_KEY
+./bin/figma-cli export --node 12:34 --format svg --output assets FILE_KEY
 
 # Сохранить SVG <text>; вид зависит от шрифтов и рендерера
-./bin/figma-rest export --node 12:34 --format svg --svg-text FILE_KEY
+./bin/figma-cli export --node 12:34 --format svg --svg-text FILE_KEY
 
 # Полные границы вместо обрезки текстового узла
-./bin/figma-rest export --node 12:34 --absolute-bounds FILE_KEY
+./bin/figma-cli export --node 12:34 --absolute-bounds FILE_KEY
 ```
 
 Принимаются file/branch key и HTTPS-ссылки `figma.com` / `www.figma.com` с путями
@@ -146,7 +227,7 @@ JSON API без преобразования полей и чисел. Диаг�
 Пример выборки через необязательный `jq`:
 
 ```sh
-./bin/figma-rest inspect --node 12:34 FILE_KEY |
+./bin/figma-cli inspect --node 12:34 FILE_KEY |
   jq '.nodes[] | select(.component) | {name, source: .component.name}'
 ```
 

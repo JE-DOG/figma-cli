@@ -20,9 +20,9 @@ import (
 	"example.com/figma-cli/internal/target"
 )
 
-const help = `figma-rest 0.1.0 — read-only Figma REST CLI
+const help = `figma-cli 0.1.0 — read-only Figma CLI (REST API)
 
-Usage: figma-rest <command> [flags] <file-key-or-figma-url>
+Usage: figma-cli <command> [flags] <file-key-or-figma-url>
 Commands:
   parse     Resolve a URL/file/branch key and node IDs offline
   inspect   Print JSON: components, mixed typography, layout and geometry
@@ -81,11 +81,11 @@ func run(ctx context.Context, args []string, in io.Reader, out, errOut io.Writer
 	}
 	command := args[0]
 	if command == "version" {
-		_, err := fmt.Fprintln(out, "figma-rest 0.1.0")
+		_, err := fmt.Fprintln(out, "figma-cli 0.1.0")
 		return err
 	}
 	if command != "parse" && command != "inspect" && command != "raw" && command != "export" {
-		return errors.New("unknown command; run figma-rest help")
+		return errors.New("unknown command; run figma-cli help")
 	}
 	fs := flag.NewFlagSet(command, flag.ContinueOnError)
 	// flag's error text may echo arbitrary arguments; emit our own safe error.
@@ -123,7 +123,7 @@ func run(ctx context.Context, args []string, in io.Reader, out, errOut io.Writer
 			_, e := io.WriteString(out, help)
 			return e
 		}
-		return errors.New("invalid flags; run figma-rest help (flags go before the target)")
+		return errors.New("invalid flags; run figma-cli help (flags go before the target)")
 	}
 	if fs.NArg() != 1 {
 		return errors.New("provide exactly one file key or Figma URL after all flags")
