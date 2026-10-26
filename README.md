@@ -1,37 +1,38 @@
 # Figma CLI
 
-Это **vibecoded CLI**, разработанный с помощью AI-агента.
+This is a **vibecoded CLI**, developed with an AI agent.
 
-Небольшой **read-only** CLI на Go: читает файл или поддерево Figma, показывает
-исходные компоненты экземпляров, типографику, layout/геометрию и экспортирует PNG/SVG.
-Работает через REST API без запущенного Figma Desktop, плагина и браузера.
+A small, **read-only** CLI written in Go. It reads a Figma file or subtree,
+reports the original components behind instances, typography, layout, and geometry,
+and exports PNG/SVG files. It uses the REST API and requires no running Figma
+Desktop app, plugin, or browser.
 
-Репозиторий, бинарник и skill называются **`figma-cli`**.
+The repository, binary, and skill are all named **`figma-cli`**.
 
-## Локальная установка и синхронизация
+## Local installation and updates
 
-Bash-скрипт [`sync-local.sh`](tools/scripts/setup/sync-local.sh) пересобирает CLI
-из текущего checkout, обновляет `~/.local/bin/figma-cli` и регистрирует skill
-ссылкой в `~/.agents/skills/figma-cli`:
+The Bash script [`sync-local.sh`](tools/scripts/setup/sync-local.sh) rebuilds the
+CLI from the current checkout, updates `~/.local/bin/figma-cli`, and registers
+the skill with a symlink at `~/.agents/skills/figma-cli`:
 
 ```sh
 bash ~/projects/figma-cli/tools/scripts/setup/sync-local.sh
 ```
 
-Запускайте его повторно после обновления исходников. Он работает из любого
-рабочего каталога; нужен Go 1.26+, токен Figma не требуется. Скрипт не загружает
-изменения из git: сначала обновите checkout удобным вам способом. В `~/.local/bin`
-бинарник заменяется атомарно только после успешной сборки и проверки версии.
-При ошибке сборки старая установка сохраняется. `bin/figma-cli` внутри checkout
-этот скрипт не обновляет.
+Run it again after updating the source code. It works from any working directory
+and requires Go 1.26+; no Figma token is needed. The script does not pull changes
+from git: update your checkout first using your preferred workflow. The binary
+in `~/.local/bin` is replaced atomically only after a successful build and version
+check. If the build fails, the existing installation is preserved. The script
+does not update `bin/figma-cli` inside the checkout.
 
-Если `~/.local/bin` ещё не входит в PATH, добавьте в настройки своей оболочки:
+If `~/.local/bin` is not already in your PATH, add this to your shell configuration:
 
 ```sh
 export PATH="$HOME/.local/bin:$PATH"
 ```
 
-Для других каталогов или установки только бинарника:
+To use different directories or install only the binary:
 
 ```sh
 bash tools/scripts/setup/sync-local.sh --bin-dir "$HOME/bin" --skills-dir "$HOME/.agents/skills"
@@ -39,69 +40,71 @@ bash tools/scripts/setup/sync-local.sh --no-skill
 bash tools/scripts/setup/sync-local.sh --help
 ```
 
-Существующая ссылка skill на этот checkout подходит для повторного запуска.
-Чужой каталог, ссылка на другой checkout или сломанная ссылка вызывают ошибку
-до сборки и замены бинарника; скрипт не удаляет их. Выберите другой
-`--skills-dir` или используйте `--no-skill`. Настройки shell, токены и другие CLI
-не меняются; `sudo` не требуется. Поддерживается Bash 3.2+.
+An existing skill symlink pointing to this checkout can be reused. An unrelated
+directory, a symlink to another checkout, or a broken symlink causes an error
+before the build or binary replacement; the script does not remove them. Choose
+a different `--skills-dir` or use `--no-skill`. Shell settings, tokens, and other
+CLIs are left unchanged; `sudo` is not required. Bash 3.2+ is supported.
 
-Проверка сценариев установки в изолированных временных каталогах:
+To test installation scenarios in isolated temporary directories:
 
 ```sh
 bash tools/scripts/setup/test-sync-local.sh
 ```
 
-## Skill для Codex
+## Codex skill
 
-Англоязычный skill [`figma-cli`](skills/figma-cli/SKILL.md) объясняет агенту,
-как выбирать узлы, читать исходные компоненты и mixed typography, интерпретировать
-layout и экспортировать PNG/SVG. Инструкции хранятся в этом репозитории;
-`agents/openai.yaml` задаёт название для списка skills. README остаётся на русском.
+The English-language [`figma-cli`](skills/figma-cli/SKILL.md) skill explains how
+an agent should select nodes, inspect original components and mixed typography,
+interpret layout, and export PNG/SVG files. Its instructions live in this
+repository; `agents/openai.yaml` defines its display name in the skills list.
 
-Скрипт выше регистрирует skill вместе с CLI. Если нужна только регистрация
-без сборки, создайте ссылку в пользовательском каталоге `~/.agents/skills`:
+The script above registers the skill along with the CLI. To register only the
+skill without building, create a symlink in the user skills directory,
+`~/.agents/skills`:
 
 ```sh
 mkdir -p "$HOME/.agents/skills"
 ln -s "$HOME/projects/figma-cli/skills/figma-cli" "$HOME/.agents/skills/figma-cli"
 ```
 
-Если checkout находится в другом месте, замените путь к нему. Команда `ln -s`
-не заменяет существующую регистрацию; перед повторной установкой проверьте её.
-Ссылка использует актуальные инструкции из репозитория без копирования файлов.
-Не перемещайте checkout без обновления ссылки. При запуске команд из другого
-проекта skill определяет расположение `figma-cli` (включая установку через PATH)
-и использует абсолютный путь к бинарнику.
+If your checkout is elsewhere, adjust the path. The `ln -s` command does not
+replace an existing registration; inspect it before reinstalling. The symlink
+uses the current instructions from the repository without copying files. If you
+move the checkout, update the symlink. When running commands from another
+project, the skill locates `figma-cli` (including installations available through
+PATH) and uses the absolute path to the binary.
 
-Пример запроса в Codex:
+Example Codex prompt:
 
 ```text
-$figma-cli посмотри исходные компоненты, шрифты и отступы по ссылке FIGMA_URL
+$figma-cli inspect the original components, fonts, and spacing at FIGMA_URL
 ```
 
-Skill также может выбираться автоматически по задаче. Если он не появился в
-списке, перезапустите Codex. Токен передаётся самому CLI через `FIGMA_TOKEN` в
-окружении процесса или `--token-stdin`; в skill и историю чата его добавлять не нужно.
-Экспорт через skill выполняется, когда его запросили в задаче.
+The skill can also be selected automatically based on the task. If it does not
+appear in the list, restart Codex. Pass the token to the CLI itself through
+`FIGMA_TOKEN` in the process environment or `--token-stdin`; do not add it to the
+skill or chat history. The skill exports assets when the task requests them.
 
-Расположение пользовательских skills и поддержка symlink описаны в
-[официальной документации OpenAI](https://learn.chatgpt.com/docs/build-skills).
+User skill locations and symlink support are described in the
+[official OpenAI documentation](https://learn.chatgpt.com/docs/build-skills).
 
-## Почему Go
+## Why Go
 
-| Критерий | Go | Rust |
+| Criterion | Go | Rust |
 | --- | --- | --- |
-| HTTP, JSON, аргументы, тестовые серверы | Стандартная библиотека | Обычно отдельные crates |
-| Поставка | Один бинарник | Один бинарник |
-| Ресурсы | GC, достаточный для сетевой утилиты | Точный контроль памяти без GC |
-| Поддержка этого CLI | Небольшой объём кода без внешних зависимостей | Больше настройки для тех же REST-задач |
+| HTTP, JSON, arguments, test servers | Standard library | Usually separate crates |
+| Distribution | Single binary | Single binary |
+| Resources | GC, sufficient for a network utility | Precise memory control without GC |
+| Maintaining this CLI | Small codebase with no external dependencies | More setup for the same REST tasks |
 
-Выбран Go; при реализации использовался установленный Go 1.26.1. Rust имеет смысл,
-если потребуется строгий контроль памяти или интеграция в существующий Rust-проект.
+Go was chosen; the implementation used the installed Go 1.26.1. Rust would make
+sense if strict memory control or integration into an existing Rust project
+became necessary.
 
-## Сборка и проверка
+## Build and verification
 
-Нужен Go 1.26+. Внешних Go-зависимостей нет.
+Go 1.26+ is required. There are no external Go dependencies.
 
 ```sh
 cd ~/projects/figma-cli
@@ -111,19 +114,20 @@ go build -o bin/figma-cli ./cmd/figma-cli
 ./bin/figma-cli help
 ```
 
-`httptest`-тесты используют локальные HTTP/TLS-серверы и вымышленные данные;
-необходим доступ к loopback. Они не обращаются к Figma и не требуют токена.
-Эта команда сборки кладёт бинарник в игнорируемый `bin/`. Для установки в
-пользовательский PATH используйте `tools/scripts/setup/sync-local.sh`, описанный выше.
+The `httptest` tests use local HTTP/TLS servers and fictional data, so loopback
+access is required. They do not contact Figma or require a token. This build
+command places the binary in the git-ignored `bin/` directory. To install it in
+your user PATH, use `tools/scripts/setup/sync-local.sh` as described above.
 
-## Доступ к Figma
+## Figma access
 
-Создайте personal access token в Figma → Settings → Security → Personal access
-tokens с областью **`file_content:read`** и доступом к нужному файлу.
-Токен можно передать через переменную `FIGMA_TOKEN` из secret manager либо через
-`--token-stdin`. Файлы конфигурации и `.env` автоматически не читаются.
+Create a personal access token in Figma → Settings → Security → Personal access
+tokens with the **`file_content:read`** scope and access to the required file.
+Pass the token through the `FIGMA_TOKEN` environment variable from a secret
+manager, or through `--token-stdin`. Configuration files and `.env` files are not
+read automatically.
 
-Пример для zsh: ввод скрыт, значение не попадает в историю команд.
+Example for zsh: input is hidden, and the value is not stored in command history.
 
 ```sh
 read -rs 'FIGMA_TOKEN?Figma token: '
@@ -132,172 +136,178 @@ export FIGMA_TOKEN
 unset FIGMA_TOKEN
 ```
 
-Альтернатива — pipe из вашего secret manager:
+Alternatively, pipe the token from your secret manager:
 
 ```sh
 your-secret-manager-command | ./bin/figma-cli inspect --token-stdin --node 12:34 FILE_KEY
 ```
 
-Здесь `your-secret-manager-command` — заменяемый пример, а не зависимость CLI.
-stdin читается до EOF, максимум 8 KiB; этот флаг явно заменяет `FIGMA_TOKEN`.
-Для уже полученного OAuth access token используйте `--auth oauth`; создание
-OAuth-приложения, вход и обновление токенов в CLI не реализованы.
-По умолчанию PAT отправляется в `X-Figma-Token`, OAuth — в `Authorization: Bearer`.
-Флага токена в аргументах нет. Токены не сохраняются, не печатаются в диагностике,
-не передаются CDN при скачивании. В API выполняются только GET-запросы.
+Here, `your-secret-manager-command` is a placeholder, not a CLI dependency.
+stdin is read until EOF, up to 8 KiB; this flag explicitly overrides `FIGMA_TOKEN`.
+For an existing OAuth access token, use `--auth oauth`; OAuth app creation,
+sign-in, and token refresh are not implemented in the CLI.
+By default, PATs are sent in `X-Figma-Token`, and OAuth tokens in
+`Authorization: Bearer`. There is no command-line argument for the token itself.
+Tokens are never saved, printed in diagnostics, or sent to the CDN during
+downloads. Only GET requests are made to the API.
 
-## Использование
+## Usage
 
-Все флаги ставятся **перед** последним аргументом. Замените `FILE_KEY` и `12:34`
-своими значениями. URL нужно заключать в кавычки из-за `?`, `&` и `;`.
+All flags must appear **before** the final argument. Replace `FILE_KEY` and
+`12:34` with your own values. Quote URLs because they may contain `?`, `&`, and `;`.
 
 ```sh
-# Разобрать ссылку офлайн, без токена
+# Parse a link offline, without a token
 ./bin/figma-cli parse 'https://www.figma.com/design/FILE_KEY/Screen?node-id=12-34'
 
-# Нормализовать URL IDs, выбрать несколько узлов
+# Normalize URL IDs and select multiple nodes
 ./bin/figma-cli parse --node 12-34 --node '56:78,90:12' FILE_KEY
 
-# Отчёт по выбранному поддереву
+# Report on a selected subtree
 ./bin/figma-cli inspect --node 12:34 --depth 3 FILE_KEY
 
-# Файл целиком; --max-nodes ограничивает отчёт, но не ответ API
+# Inspect the entire file; --max-nodes limits the report, not the API response
 ./bin/figma-cli inspect --max-nodes 500 FILE_KEY
 
-# Локальный size, relativeTransform и векторные paths из API
+# Include local size, relativeTransform, and vector paths from the API
 ./bin/figma-cli inspect --geometry --node 12:34 FILE_KEY
 
-# Точный ответ API со всеми неизвестными полями и исходными числами
+# Get the exact API response, including unknown fields and original numbers
 ./bin/figma-cli raw --node 12:34 FILE_KEY > response.json
 
-# Получить конкретную версию
+# Fetch a specific version
 ./bin/figma-cli inspect --file-version VERSION_ID --node 12:34 FILE_KEY
 
-# Скачать PNG 2x; создаст exports/12-34.png
+# Download a PNG at 2x; creates exports/12-34.png
 ./bin/figma-cli export --node 12:34 --scale 2 FILE_KEY
 
-# SVG по умолчанию переводит текст в outlines
+# SVG export converts text to outlines by default
 ./bin/figma-cli export --node 12:34 --format svg --output assets FILE_KEY
 
-# Сохранить SVG <text>; вид зависит от шрифтов и рендерера
+# Preserve SVG <text>; appearance depends on fonts and the renderer
 ./bin/figma-cli export --node 12:34 --format svg --svg-text FILE_KEY
 
-# Полные границы вместо обрезки текстового узла
+# Use full bounds instead of cropping the text node
 ./bin/figma-cli export --node 12:34 --absolute-bounds FILE_KEY
 ```
 
-Принимаются file/branch key и HTTPS-ссылки `figma.com` / `www.figma.com` с путями
-`file`, `design`, `proto`, `board`, `slides`. Это извлечение ключа, а не обещание
-поддержки всех возможностей редактора через REST. В ссылке
-`/design/MAIN_KEY/branch/BRANCH_KEY/Name` для API выбирается `BRANCH_KEY`.
-Флаги `--node` заменяют `node-id` из URL; повторы удаляются с сохранением порядка.
-Поддерживаются обычные пары ID и составные instance ID вроде `I12:34;56:78`;
-`12-34` нормализуется в `12:34`. REST не публикует полную грамматику ID,
-неизвестные будущие формы могут потребовать обновления парсера.
+The CLI accepts file/branch keys and HTTPS URLs on `figma.com` / `www.figma.com`
+with `file`, `design`, `proto`, `board`, or `slides` paths. This extracts the key;
+it does not imply support for every editor feature through REST. For a URL such
+as `/design/MAIN_KEY/branch/BRANCH_KEY/Name`, `BRANCH_KEY` is used for API requests.
+The `--node` flags override `node-id` from the URL; duplicates are removed while
+preserving order. Standard ID pairs and compound instance IDs such as
+`I12:34;56:78` are supported; `12-34` is normalized to `12:34`. REST does not
+publish a complete ID grammar, so future formats may require parser updates.
 
-Вывод `parse`, `inspect` и `export` — форматированный JSON. `raw` возвращает
-JSON API без преобразования полей и чисел. Диагностика идёт в stderr; ошибка
-даёт exit code 1. Для отсутствующего/null узла `inspect` завершается ошибкой;
-`raw` сохраняет исходный ответ, включая null.
+The `parse`, `inspect`, and `export` commands output formatted JSON. `raw` returns
+the API JSON without transforming fields or numbers. Diagnostics go to stderr;
+errors return exit code 1. For a missing/null node, `inspect` fails; `raw` preserves
+the original response, including null.
 
-## Содержание отчёта
+## Report contents
 
-`nodes` — плоский список в порядке обхода, с `id`, `name`, `type`, `parentId`.
-Корневой родитель в ответе node API неизвестен. Пересекающиеся поддеревья
-не дублируют один и тот же ID.
+`nodes` is a flat list in traversal order, with `id`, `name`, `type`, and
+`parentId`. The root node's parent is unknown in a node API response. Overlapping
+subtrees do not duplicate the same ID.
 
-- `component` у INSTANCE связывает `componentId` с таблицей `components`:
-  исходное имя, key, remote и имя component set, если метаданные доступны.
-  Переименованный instance сохраняет своё `name`; имя источника находится в
-  `component.name`. При нехватке метаданных `resolved=false`, без подмены именем
-  экземпляра и без дополнительных запросов к библиотекам. Detached instance
-  больше не содержит надёжной ссылки на исходный компонент.
-- `typography` для TEXT/TEXT_PATH сохраняет базовый `style` целиком, включая
-  font family/PostScript name, размер, начертание/weight, spacing и line height.
-  `runs` объединяют базовый стиль с частичными overrides, каждый с текстом,
-  override ID и полуоткрытыми `start`/`end`. Нулевой ID и отсутствующий хвост
-  массива означают базовый стиль. Если override отсутствует в таблице,
-  добавляется предупреждение и сохраняется базовый стиль для run.
-- `layout` содержит переданные API padding, gaps, auto-layout и grid настройки,
-  sizing/alignment, constraints, min/max, bounding boxes, радиусы и опциональную
-  векторную геометрию. Отсутствующие поля не подменяются нулями; `0` и `null`
-  сохраняются. `boundVariables` содержит ссылки, а не вычисленные значения.
-- `units`, `limitations`, `warnings`, `truncated` делают ограничения явными.
+- `component` on an INSTANCE links `componentId` to the `components` table:
+  original name, key, remote status, and component set name, when metadata is
+  available. A renamed instance keeps its own `name`; the source name is in
+  `component.name`. When metadata is missing, `resolved=false`, with no fallback
+  to the instance name and no additional library requests. A detached instance
+  no longer contains a reliable reference to its original component.
+- `typography` for TEXT/TEXT_PATH preserves the complete base `style`, including
+  font family/PostScript name, size, style/weight, spacing, and line height.
+  `runs` merge the base style with partial overrides, each with text, an override
+  ID, and half-open `start`/`end` offsets. A zero ID or missing entries at the end
+  of the array indicate the base style. If an override is missing from the table,
+  a warning is added and the base style is retained for that run.
+- `layout` contains API-provided padding, gaps, auto-layout and grid settings,
+  sizing/alignment, constraints, min/max values, bounding boxes, radii, and optional
+  vector geometry. Missing fields are not replaced with zeros; `0` and `null`
+  are preserved. `boundVariables` contains references, not resolved values.
+- `units`, `limitations`, `warnings`, and `truncated` make limitations explicit.
 
-Пример выборки через необязательный `jq`:
+Example query using the optional `jq` tool:
 
 ```sh
 ./bin/figma-cli inspect --node 12:34 FILE_KEY |
   jq '.nodes[] | select(.component) | {name, source: .component.name}'
 ```
 
-## Единицы и границы применимости
+## Units and limitations
 
-- Геометрия, padding/gaps, font size и letter spacing — **пиксели Figma**.
-  Пересчёт в Android dp/sp требует соглашения о масштабе макета и настройках
-  платформы и не выполняется автоматически.
-- `absoluteBoundingBox` — bounds в canvas после трансформаций;
-  `absoluteRenderBounds` учитывает визуальные эффекты и может быть null.
-  `size` и `relativeTransform` запрашиваются через `--geometry`; у повёрнутых
-  узлов размер bounding box отличается от локального размера.
-- Padding/gaps — настройки layout, а не вычисленные расстояния между любыми
-  слоями. SPACE_BETWEEN, wrap, grid и вложенные transforms требуют layout engine;
-  произвольные margins и расстояния CLI не додумывает.
-- `lineHeightUnit` из REST: `PIXELS`, `FONT_SIZE_%`, `INTRINSIC_%`. Сохраняются
-  соответствующие исходные числовые поля, включая deprecated `lineHeightPercent`;
-  `AUTO` не синтезируется. `FONT_SIZE_%` и `INTRINSIC_%` различаются.
-- Для mixed text выбрана индексация **UTF-16**, как в Figma Plugin API.
-  REST описывает «characters», но явно не закрепляет UTF-16; это предположение
-  требует проверки на живом REST-ответе с emoji. Fixtures проверяют эту модель,
-  короткие override-массивы и surrogate pairs. Граница, разрезающая surrogate
-  pair, вызывает предупреждение: весь символ получает стиль первой единицы.
-- SVG text зависит от установленных шрифтов. PNG scale: 0.01–4; для SVG scale
-  остаётся 1. Figma может уменьшить экспорт свыше 32 мегапикселей. Null URL
-  рендера означает ошибку узла; все такие результаты проверяются до скачивания.
+- Geometry, padding/gaps, font size, and letter spacing use **Figma pixels**.
+  Converting to Android dp/sp requires an agreed design scale and platform
+  settings; conversion is not performed automatically.
+- `absoluteBoundingBox` contains canvas bounds after transformations;
+  `absoluteRenderBounds` accounts for visual effects and may be null.
+  `size` and `relativeTransform` are requested with `--geometry`; for rotated
+  nodes, the bounding box size differs from the local size.
+- Padding/gaps are layout settings, not computed distances between arbitrary
+  layers. SPACE_BETWEEN, wrap, grid, and nested transforms require a layout
+  engine; the CLI does not infer arbitrary margins or distances.
+- REST `lineHeightUnit` values are `PIXELS`, `FONT_SIZE_%`, and `INTRINSIC_%`.
+  The corresponding original numeric fields are preserved, including the
+  deprecated `lineHeightPercent`; `AUTO` is not synthesized. `FONT_SIZE_%` and
+  `INTRINSIC_%` are distinct.
+- Mixed text uses **UTF-16** indexing, as in the Figma Plugin API. REST describes
+  “characters” but does not explicitly guarantee UTF-16; this assumption requires
+  verification against a live REST response containing emoji. Fixtures test this
+  model, short override arrays, and surrogate pairs. A boundary that splits a
+  surrogate pair produces a warning: the entire character receives the style of
+  its first code unit.
+- SVG text depends on installed fonts. PNG scale ranges from 0.01 to 4; SVG scale
+  stays at 1. Figma may downscale exports larger than 32 megapixels. A null render
+  URL indicates a node error; all such results are checked before downloading.
 
-## Лимиты, ошибки и хранение
+## Limits, errors, and storage
 
-По умолчанию `--timeout 30s` ограничивает всю сетевую команду: запросы, ожидания
-и последовательные скачивания. Ctrl+C отменяет запрос/ожидание.
-`--retries 2` задаёт повторы только для 429 (допустимо 0–5). Учитываются
-`Retry-After` в секундах и HTTP-date; отсутствующий/некорректный заголовок даёт
-1/2/4… секунд. Если ожидание не помещается в timeout, команда возвращает ошибку
-со сроком ожидания. Другие HTTP-ошибки не повторяются автоматически.
+By default, `--timeout 30s` limits the entire network command: requests, waits,
+and sequential downloads. Ctrl+C cancels the request or wait.
+`--retries 2` sets retries for 429 responses only (allowed range: 0–5).
+`Retry-After` values in seconds and HTTP-date format are honored; a missing or
+invalid header results in waits of 1/2/4… seconds. If a wait would exceed the
+timeout, the command returns an error indicating the required wait. Other HTTP
+errors are not retried automatically.
 
-Лимиты: 100 выбранных IDs, JSON до 64 MiB, один asset до 128 MiB.
-В `inspect` текст одного узла ограничен 256 KiB в UTF-8, а весь отчёт —
-10000 style runs. Превышение даёт явную ошибку до разрастания отчёта в памяти:
-выберите меньшее поддерево либо используйте `raw` для полного ответа.
-`--max-nodes` по умолчанию 2000 (диапазон 1–100000) ограничивает только обход
-отчёта с явным `truncated=true`. `--depth 0` означает отсутствие API-ограничения
-глубины; 1–1000 передаётся в API. У file и nodes endpoints глубина отсчитывается
-по-разному — см. документацию. Для больших файлов выбирайте узлы и `--depth`.
-`raw` не применяет `--max-nodes`, но сохраняет лимит размера HTTP-ответа.
+Limits: 100 selected IDs, JSON up to 64 MiB, and individual assets up to 128 MiB.
+In `inspect`, text per node is limited to 256 KiB in UTF-8, and the entire report
+is limited to 10000 style runs. Exceeding these limits produces an explicit error
+before the report grows further in memory: select a smaller subtree or use `raw`
+for the full response. `--max-nodes` defaults to 2000 (range: 1–100000) and limits
+only report traversal, with an explicit `truncated=true`. `--depth 0` means no API
+depth limit; values from 1 to 1000 are passed to the API. The file and nodes
+endpoints count depth differently; see the documentation. For large files, select
+specific nodes and use `--depth`. `raw` does not apply `--max-nodes`, but retains
+the HTTP response size limit.
 
-Тела HTTP-ошибок и signed CDN URLs не выводятся. При 401/403 проверяйте срок
-токена, scope и доступ; при 404 — файл/ветку. Лимиты Figma зависят от плана,
-ресурса и seat: увеличение числа повторов не повышает квоту.
+HTTP error bodies and signed CDN URLs are not printed. For 401/403 errors, check
+token expiration, scope, and access; for 404 errors, check the file/branch. Figma
+limits depend on the plan, resource, and seat: increasing retries does not
+increase the quota.
 
-Экспорт скачивается во временный файл в каталоге назначения и публикуется
-атомарно без замены существующего файла. Файловая система должна поддерживать
-hard links. Ошибка отдельного скачивания не оставляет его частичный файл;
-ранее завершённые экспорты остаются. Manifest содержит только ID и локальный путь.
-API-ответы и изображения могут содержать приватный дизайн: выбирайте место
-хранения осознанно. `exports/`, `bin/` и `.env*` игнорируются git.
+Exports are downloaded to a temporary file in the destination directory and
+published atomically without replacing existing files. The file system must
+support hard links. A failed download leaves no partial file; previously
+completed exports remain. The manifest contains only IDs and local paths.
+API responses and images may contain private designs: choose storage locations
+carefully. `exports/`, `bin/`, and `.env*` are ignored by git.
 
-## Официальные источники
+## Official sources
 
-Проверены при реализации 25 октября 2026 года:
+Checked during implementation on October 25, 2026:
 
-- [File/nodes/images endpoints, depth, null nodes и image scale](https://developers.figma.com/docs/rest-api/file-endpoints/)
-- [Типы узлов: INSTANCE, TEXT и characterStyleOverrides](https://developers.figma.com/docs/rest-api/file-node-types/)
-- [TypeStyle, единицы и component metadata](https://developers.figma.com/docs/rest-api/file-property-types/)
-- [PAT и X-Figma-Token](https://developers.figma.com/docs/rest-api/personal-access-tokens/)
-- [Authentication и scopes](https://developers.figma.com/docs/rest-api/authentication/)
-- [Rate limits и Retry-After](https://developers.figma.com/docs/rest-api/rate-limits/)
-- [Plugin API: UTF-16 и surrogate pairs](https://developers.figma.com/docs/plugins/api/properties/TextNode-deletecharacters/)
-- [Официальный MCP guide: file/branch URL parsing](https://github.com/figma/mcp-server-guide/blob/main/skills-figquery/figma-code-connect/SKILL.md)
+- [File/nodes/images endpoints, depth, null nodes, and image scale](https://developers.figma.com/docs/rest-api/file-endpoints/)
+- [Node types: INSTANCE, TEXT, and characterStyleOverrides](https://developers.figma.com/docs/rest-api/file-node-types/)
+- [TypeStyle, units, and component metadata](https://developers.figma.com/docs/rest-api/file-property-types/)
+- [PATs and X-Figma-Token](https://developers.figma.com/docs/rest-api/personal-access-tokens/)
+- [Authentication and scopes](https://developers.figma.com/docs/rest-api/authentication/)
+- [Rate limits and Retry-After](https://developers.figma.com/docs/rest-api/rate-limits/)
+- [Plugin API: UTF-16 and surrogate pairs](https://developers.figma.com/docs/plugins/api/properties/TextNode-deletecharacters/)
+- [Official MCP guide: file/branch URL parsing](https://github.com/figma/mcp-server-guide/blob/main/skills-figquery/figma-code-connect/SKILL.md)
 
-Проверки без токена подтверждают локальную реализацию. Для live smoke test
-нужны ваш токен в env/stdin и URL доступного файла; live-проверка без них
-не выполнялась.
+Checks without a token verify the local implementation. A live smoke test
+requires your token through env/stdin and the URL of an accessible file; no live
+verification was performed without them.
