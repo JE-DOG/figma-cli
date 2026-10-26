@@ -20,7 +20,9 @@ import (
 	"example.com/figma-cli/internal/target"
 )
 
-const help = `figma-cli 0.1.0 — read-only Figma CLI (REST API)
+const cliVersion = "0.0.1"
+
+const help = `figma-cli ` + cliVersion + ` — read-only Figma CLI (REST API)
 
 Usage: figma-cli <command> [flags] <file-key-or-figma-url>
 Commands:
@@ -81,7 +83,7 @@ func run(ctx context.Context, args []string, in io.Reader, out, errOut io.Writer
 	}
 	command := args[0]
 	if command == "version" {
-		_, err := fmt.Fprintln(out, "figma-cli 0.1.0")
+		_, err := fmt.Fprintln(out, "figma-cli "+cliVersion)
 		return err
 	}
 	if command != "parse" && command != "inspect" && command != "raw" && command != "export" {

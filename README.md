@@ -9,7 +9,49 @@ Desktop app, plugin, or browser.
 
 The repository, binary, and skill are all named **`figma-cli`**.
 
-## Local installation and updates
+## Install a prebuilt binary
+
+Download a ready-to-run binary from
+[GitHub Releases](https://github.com/JE-DOG/figma-cli/releases/latest).
+No Go installation or source checkout is required.
+
+| System | Architecture | Download (0.0.1) |
+| --- | --- | --- |
+| macOS | Intel (amd64) | [tar.gz](https://github.com/JE-DOG/figma-cli/releases/download/v0.0.1/figma-cli_0.0.1_darwin_amd64.tar.gz) |
+| macOS | Apple Silicon (arm64) | [tar.gz](https://github.com/JE-DOG/figma-cli/releases/download/v0.0.1/figma-cli_0.0.1_darwin_arm64.tar.gz) |
+| Linux | x86-64 (amd64) | [tar.gz](https://github.com/JE-DOG/figma-cli/releases/download/v0.0.1/figma-cli_0.0.1_linux_amd64.tar.gz) |
+| Linux | ARM64 | [tar.gz](https://github.com/JE-DOG/figma-cli/releases/download/v0.0.1/figma-cli_0.0.1_linux_arm64.tar.gz) |
+| Windows | x86-64 (amd64) | [zip](https://github.com/JE-DOG/figma-cli/releases/download/v0.0.1/figma-cli_0.0.1_windows_amd64.zip) |
+| Windows | ARM64 | [zip](https://github.com/JE-DOG/figma-cli/releases/download/v0.0.1/figma-cli_0.0.1_windows_arm64.zip) |
+
+Each archive contains the executable and this README. SHA-256 hashes are in
+[checksums.txt](https://github.com/JE-DOG/figma-cli/releases/download/v0.0.1/checksums.txt).
+
+For macOS or Linux, download and extract the archive, then place `figma-cli` in
+a directory on your PATH. For example, on an Apple Silicon Mac:
+
+```sh
+curl -fLO https://github.com/JE-DOG/figma-cli/releases/download/v0.0.1/figma-cli_0.0.1_darwin_arm64.tar.gz
+curl -fLO https://github.com/JE-DOG/figma-cli/releases/download/v0.0.1/checksums.txt
+shasum -a 256 --check --ignore-missing checksums.txt
+tar -xzf figma-cli_0.0.1_darwin_arm64.tar.gz
+mkdir -p "$HOME/.local/bin"
+install -m 755 figma-cli "$HOME/.local/bin/figma-cli"
+export PATH="$HOME/.local/bin:$PATH"
+figma-cli version
+```
+
+Use the archive for your platform from the table above. On Linux, you can use
+`sha256sum --check --ignore-missing checksums.txt` to verify the download.
+Persist the PATH setting in your shell configuration if needed.
+
+On Windows, extract the ZIP and run `.\figma-cli.exe version` in PowerShell.
+Add the directory containing `figma-cli.exe` to your user PATH to run it from
+other directories.
+
+Only network commands require a Figma token; see [Figma access](#figma-access).
+
+## Local installation and updates from source
 
 The Bash script [`sync-local.sh`](tools/scripts/setup/sync-local.sh) rebuilds the
 CLI from the current checkout, updates `~/.local/bin/figma-cli`, and registers
@@ -119,6 +161,24 @@ access is required. They do not contact Figma or require a token. This build
 command places the binary in the git-ignored `bin/` directory. To install it in
 your user PATH, use `tools/scripts/setup/sync-local.sh` as described above.
 
+### Building a release
+
+Maintainers can build all six release archives locally with Go 1.26+ and Python 3:
+
+```sh
+python3 tools/scripts/release/build.py 0.0.1
+```
+
+The output directory defaults to `dist/` and must be new or empty; use
+`--output DIR` to choose another location. The script checks that the CLI version
+matches the requested release and writes archives plus `checksums.txt`.
+
+To publish a release, update `cliVersion` in `internal/cli/cli.go`, add notes at
+`docs/releases/VERSION.md`, and push a matching `vVERSION` tag. The
+[release workflow](.github/workflows/release.yml) runs tests and vet, builds all
+archives, verifies checksums, smoke-tests the packaged Linux binary, and publishes
+the GitHub Release with its assets.
+
 ## Figma access
 
 Create a personal access token in Figma → Settings → Security → Personal access
@@ -152,6 +212,9 @@ Tokens are never saved, printed in diagnostics, or sent to the CDN during
 downloads. Only GET requests are made to the API.
 
 ## Usage
+
+Examples below use `./bin/figma-cli` from a source build. If you installed a
+prebuilt binary on your PATH, use `figma-cli` instead.
 
 All flags must appear **before** the final argument. Replace `FILE_KEY` and
 `12:34` with your own values. Quote URLs because they may contain `?`, `&`, and `;`.

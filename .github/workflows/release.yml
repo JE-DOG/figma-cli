@@ -1,0 +1,59 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Test and vet
+        run: |
+          go test -race ./...
+          go vet ./...
+          bash tools/scripts/setup/test-sync-local.sh
+      - name: Build release archives
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          test -f "docs/releases/${RELEASE_TAG#v}.md"
+          python3 tools/scripts/release/build.py "${RELEASE_TAG#v}"
+          (cd dist && sha256sum --check checksums.txt)
+      - name: Smoke test the packaged Linux binary
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          mkdir "$RUNNER_TEMP/figma-cli-smoke"
+          tar -xzf "dist/figma-cli_${RELEASE_TAG#v}_linux_amd64.tar.gz" -C "$RUNNER_TEMP/figma-cli-smoke"
+          cli="$RUNNER_TEMP/figma-cli-smoke/figma-cli"
+          test "$("$cli" version)" = "figma-cli ${RELEASE_TAG#v}"
+          "$cli" help
+          "$cli" parse 'https://www.figma.com/design/FILE_KEY/Screen?node-id=12-34'
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$RELEASE_TAG" dist/* \
+            --verify-tag \
+            --title "Figma CLI ${RELEASE_TAG#v}" \
+            --notes-file "docs/releases/${RELEASE_TAG#v}.md" \
+            --latest
